@@ -3,6 +3,9 @@
 
 using namespace std;
 
+void Cleanup();
+
+
 bool quit = false;
 // SDL
 SDL_Event event;
@@ -74,9 +77,23 @@ void EventHandler(){
         }
     }
 }
+
 void MoveBall(){
     ballX += ballVelocityX;
     ballY += ballVelocityY;
+}
+
+void GameOver(){
+    SDL_RenderClear(_renderer);
+
+    SDL_Surface *overScreen = SDL_LoadBMP("bmps\\go.bmp");
+    SDL_Texture *overScreenTexture = SDL_CreateTextureFromSurface(_renderer, overScreen);
+    SDL_Rect overRect = {0,0,WIDTH,HEIGHT};
+    SDL_RenderCopy(_renderer, overScreenTexture, NULL, &overRect);
+    SDL_RenderPresent(_renderer);
+    SDL_Delay(5000);
+    Cleanup();
+    SDL_Quit();
 }
 
 void CheckForBallCollision(){
@@ -85,8 +102,12 @@ void CheckForBallCollision(){
         ballVelocityX *= -1;
     }
     // hit the Y boundaries
-    if(ballY <= MIN_HEIGHT || ballY >= HEIGHT-20){//30 is the width of the ball - extract this better later
+    if(ballY <= MIN_HEIGHT){//30 is the width of the ball - extract this better later
         ballVelocityY *= -1;
+    }
+
+    if(ballY > HEIGHT + 60){ // buffer of 60 pixels instead of immediately upon 0,0
+        GameOver();
     }
 
     // bat collision
@@ -118,7 +139,7 @@ void BallBrickCollision(){
             if(hit){
                 brickRect[i][j].x = 3000; // fishy...
                 ballVelocityY *= -1;
-                deleteBrickCount += 5;
+                deleteBrickCount += 1;
             }
         }
     }
