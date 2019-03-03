@@ -26,13 +26,18 @@ int brickWidth = 80;
 int brickHeight = 35;
 SDL_Surface *brick;
 SDL_Texture *brickTexture;
-SDL_Rect brickRect[3][7];
+const int BRICK_ROWS = 3;
+const int BRICK_COLUMNS = 7;
+SDL_Rect brickRect[BRICK_ROWS][BRICK_COLUMNS];
+
+int deleteBrickCount = 0;
+int numberOfBricks = (BRICK_ROWS * BRICK_COLUMNS);
 
 void InitializeBricks(){
     int yPos = 50;
     int xPos = 50;
-    for(int i = 0; i < 3; ++i){
-        for(int j = 0; j < 7; ++j){
+    for(int i = 0; i < BRICK_ROWS; ++i){
+        for(int j = 0; j < BRICK_COLUMNS; ++j){
             brickRect[i][j] = {xPos, yPos, brickWidth, brickHeight};
             xPos += 100;
         }
@@ -62,11 +67,11 @@ void MoveBall(){
 
 void CheckForBallCollision(){
     // hit the X boundaries
-    if(ballX <= MIN_WIDTH || ballX >= WIDTH-30){//30 is the width of the ball - extract this better later
+    if(ballX <= MIN_WIDTH || ballX >= WIDTH-20){//30 is the width of the ball - extract this better later
         ballVelocityX *= -1;
     }
     // hit the Y boundaries
-    if(ballY <= MIN_HEIGHT || ballY >= HEIGHT-30){//30 is the width of the ball - extract this better later
+    if(ballY <= MIN_HEIGHT || ballY >= HEIGHT-20){//30 is the width of the ball - extract this better later
         ballVelocityY *= -1;
     }
 
@@ -77,9 +82,31 @@ void CheckForBallCollision(){
     }
 }
 
-void BallBrickCollision(){
-    bool a;
+bool BallBrickCollisionDetected(SDL_Rect brick, SDL_Rect ball){
+    // check if the rectangles are overlapping
+    int brickXMin = brick.x;
+    int brickXMax = brick.x + brick.w;
+    if(ball.x >= brickXMin-20 && ball.x <= brickXMax){
+        int brickYMin = brick.y;
+        int brickYMax = brick.y + brick.h;
+        if(ball.y <= brickYMax && ball.y >= brickYMin - 20){
+            return true;
+        }
+    }
+    return false;
+}
 
+void BallBrickCollision(){
+    bool hit;
+    for(int i = 0; i < 3; ++i){
+        for(int j = 0; j < 7; ++j){
+            hit = BallBrickCollisionDetected(brickRect[i][j], ballRect);
+            if(hit){
+                brickRect[i][j].x = 3000; // fishy...
+                ballVelocityY *= -1;
+            }
+        }
+    }
 }
 
 int main(int argc, char ** argv){
@@ -137,14 +164,15 @@ int main(int argc, char ** argv){
         SDL_Rect batRect = {batX, batY, 60, 30};
 
         CheckForBallCollision();
+        BallBrickCollision();
         MoveBall();
 
         // copy all textures
         SDL_RenderCopy(renderer, backgroundTexture, NULL, &backgroundRect);
         int yPos = 50;
         int xPos = 50;
-        for(int i = 0; i < 3; ++i){
-            for(int j = 0; j < 7; ++j){
+        for(int i = 0; i < BRICK_ROWS; ++i){
+            for(int j = 0; j < BRICK_COLUMNS; ++j){
             SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[i][j]);
                 xPos +=50;
             }
