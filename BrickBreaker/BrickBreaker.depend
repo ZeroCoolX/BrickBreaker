@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1551643430 source:c:\users\mitinz\documents\development\brickbreaker\brickbreaker\main.cpp
+1551644386 source:c:\users\mitinz\documents\development\brickbreaker\brickbreaker\main.cpp
 	<SDL2/SDL.h>
 	<iostream>
 

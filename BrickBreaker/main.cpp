@@ -7,6 +7,7 @@ bool quit = false;
 SDL_Event event;
 
 // real position on screen
+SDL_Rect ballRect;
 int ballX = 10;
 int ballY = 10;
 int ballVelocityX = 3;
@@ -20,6 +21,25 @@ const int MIN_HEIGHT = 0;
 int batX = WIDTH / 2;
 int batY = HEIGHT - 30;//size of sprite
 int batSpeed = 5;
+
+int brickWidth = 80;
+int brickHeight = 35;
+SDL_Surface *brick;
+SDL_Texture *brickTexture;
+SDL_Rect brickRect[3][7];
+
+void InitializeBricks(){
+    int yPos = 50;
+    int xPos = 50;
+    for(int i = 0; i < 3; ++i){
+        for(int j = 0; j < 7; ++j){
+            brickRect[i][j] = {xPos, yPos, brickWidth, brickHeight};
+            xPos += 100;
+        }
+        xPos = 50;
+        yPos += 50;
+    }
+}
 
 void EventHandler(){
     SDL_PollEvent(&event);
@@ -57,6 +77,11 @@ void CheckForBallCollision(){
     }
 }
 
+void BallBrickCollision(){
+    bool a;
+
+}
+
 int main(int argc, char ** argv){
     // Setup SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -84,6 +109,11 @@ int main(int argc, char ** argv){
     SDL_Texture *backgroundTexture = SDL_CreateTextureFromSurface(renderer, background);
     SDL_Rect backgroundRect = {0, 0, WIDTH, HEIGHT};
 
+    // Setup brick textures
+    brick = SDL_LoadBMP("bmps\\brick.bmp");
+    brickTexture = SDL_CreateTextureFromSurface(renderer, brick);
+    InitializeBricks();
+
     // Setup bat texture
     SDL_Surface *bat = SDL_LoadBMP("bmps\\bat.bmp");
     SDL_Texture *batTexture = SDL_CreateTextureFromSurface(renderer, bat);
@@ -103,7 +133,7 @@ int main(int argc, char ** argv){
         now = SDL_GetTicks();
         deltaTime = now - lastTime;
 
-        SDL_Rect ballRect = {ballX, ballY, 20, 20};
+        ballRect = {ballX, ballY, 20, 20};
         SDL_Rect batRect = {batX, batY, 60, 30};
 
         CheckForBallCollision();
@@ -111,6 +141,15 @@ int main(int argc, char ** argv){
 
         // copy all textures
         SDL_RenderCopy(renderer, backgroundTexture, NULL, &backgroundRect);
+        int yPos = 50;
+        int xPos = 50;
+        for(int i = 0; i < 3; ++i){
+            for(int j = 0; j < 7; ++j){
+            SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[i][j]);
+                xPos +=50;
+            }
+            yPos += 50;
+        }
         SDL_RenderCopy(renderer, ballTexture, NULL, &ballRect);
         SDL_RenderCopy(renderer, batTexture, NULL, &batRect);
 
