@@ -4,24 +4,37 @@
 using namespace std;
 
 bool quit = false;
+// SDL
 SDL_Event event;
+SDL_Window* _window;
+SDL_Renderer *_renderer;
+SDL_Surface *background;
+SDL_Texture *backgroundTexture;
+SDL_Rect backgroundRect;
+SDL_Surface *bat;
+SDL_Texture *batTexture;
+SDL_Surface *ball;
+SDL_Texture *ballTexture;
 
-// real position on screen
+// ball
 SDL_Rect ballRect;
 int ballX = 10;
 int ballY = 10;
 int ballVelocityX = 3;
 int ballVelocityY = 3;
 
+// screen
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const int MIN_WIDTH = 0;
 const int MIN_HEIGHT = 0;
 
+// bat
 int batX = WIDTH / 2;
 int batY = HEIGHT - 30;//size of sprite
 int batSpeed = 5;
 
+// bricks
 int brickWidth = 80;
 int brickHeight = 35;
 SDL_Surface *brick;
@@ -30,6 +43,7 @@ const int BRICK_ROWS = 3;
 const int BRICK_COLUMNS = 7;
 SDL_Rect brickRect[BRICK_ROWS][BRICK_COLUMNS];
 
+// game win conditions
 int deleteBrickCount = 0;
 int numberOfBricks = (BRICK_ROWS * BRICK_COLUMNS);
 
@@ -104,9 +118,37 @@ void BallBrickCollision(){
             if(hit){
                 brickRect[i][j].x = 3000; // fishy...
                 ballVelocityY *= -1;
+                deleteBrickCount += 5;
             }
         }
     }
+}
+
+void Cleanup(){
+    SDL_DestroyTexture(ballTexture);
+    SDL_DestroyTexture(batTexture);
+    SDL_DestroyTexture(brickTexture);
+    SDL_DestroyTexture(backgroundTexture);
+
+    SDL_FreeSurface(bat);
+    SDL_FreeSurface(brick);
+    SDL_FreeSurface(ball);
+    SDL_FreeSurface(background);
+
+    SDL_DestroyRenderer(_renderer);
+
+    SDL_DestroyWindow(_window);
+}
+
+void WinTheGame(){
+    SDL_RenderClear(_renderer);
+
+    SDL_Surface *winScreen = SDL_LoadBMP("bmps\\win.bmp");
+    SDL_Texture *winScreenTexture = SDL_CreateTextureFromSurface(_renderer, winScreen);
+    SDL_Rect winRect = {250,200,350,350};
+    SDL_RenderCopy(_renderer, winScreenTexture, NULL, &winRect);
+    SDL_RenderPresent(_renderer);
+    SDL_Delay(5000);
 }
 
 int main(int argc, char ** argv){
@@ -117,37 +159,37 @@ int main(int argc, char ** argv){
 	}
 
 	// Setup window
-	SDL_Window* window = SDL_CreateWindow("Classic Brick Breaker", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+	_window = SDL_CreateWindow("Classic Brick Breaker", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		WIDTH, HEIGHT, SDL_WINDOW_SHOWN); // SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN
-	if (window == nullptr) {
+	if (_window == nullptr) {
 		SDL_Quit();
 		cout << "Window error" << endl;
 		return 1;
 	}
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (renderer == nullptr) {
+    _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (_renderer == nullptr) {
 		SDL_Quit();
 		cout << "Renderer error" << endl;
 		return 1;
 	}
 
     // Setup background texture
-    SDL_Surface *background = SDL_LoadBMP("bmps\\bk.bmp");
-    SDL_Texture *backgroundTexture = SDL_CreateTextureFromSurface(renderer, background);
-    SDL_Rect backgroundRect = {0, 0, WIDTH, HEIGHT};
+    background = SDL_LoadBMP("bmps\\bk.bmp");
+    backgroundTexture = SDL_CreateTextureFromSurface(_renderer, background);
+    backgroundRect = {0, 0, WIDTH, HEIGHT};
 
     // Setup brick textures
     brick = SDL_LoadBMP("bmps\\brick.bmp");
-    brickTexture = SDL_CreateTextureFromSurface(renderer, brick);
+    brickTexture = SDL_CreateTextureFromSurface(_renderer, brick);
     InitializeBricks();
 
     // Setup bat texture
-    SDL_Surface *bat = SDL_LoadBMP("bmps\\bat.bmp");
-    SDL_Texture *batTexture = SDL_CreateTextureFromSurface(renderer, bat);
+    bat = SDL_LoadBMP("bmps\\bat.bmp");
+    batTexture = SDL_CreateTextureFromSurface(_renderer, bat);
 
     // Setup the ball texture
-    SDL_Surface *ball = SDL_LoadBMP("bmps\\ball.bmp");
-    SDL_Texture *ballTexture = SDL_CreateTextureFromSurface(renderer, ball);
+    ball = SDL_LoadBMP("bmps\\ball.bmp");
+    ballTexture = SDL_CreateTextureFromSurface(_renderer, ball);
 
     float now = 0;
     float lastTime = 0;
@@ -155,7 +197,7 @@ int main(int argc, char ** argv){
 
     while(!quit){
         EventHandler();
-        SDL_RenderClear(renderer);
+        SDL_RenderClear(_renderer);
 
         now = SDL_GetTicks();
         deltaTime = now - lastTime;
@@ -167,33 +209,32 @@ int main(int argc, char ** argv){
         BallBrickCollision();
         MoveBall();
 
+        if(deleteBrickCount >= numberOfBricks){
+            WinTheGame();
+            break;
+        }
+
         // copy all textures
-        SDL_RenderCopy(renderer, backgroundTexture, NULL, &backgroundRect);
+        SDL_RenderCopy(_renderer, backgroundTexture, NULL, &backgroundRect);
         int yPos = 50;
         int xPos = 50;
         for(int i = 0; i < BRICK_ROWS; ++i){
             for(int j = 0; j < BRICK_COLUMNS; ++j){
-            SDL_RenderCopy(renderer, brickTexture, NULL, &brickRect[i][j]);
+            SDL_RenderCopy(_renderer, brickTexture, NULL, &brickRect[i][j]);
                 xPos +=50;
             }
             yPos += 50;
         }
-        SDL_RenderCopy(renderer, ballTexture, NULL, &ballRect);
-        SDL_RenderCopy(renderer, batTexture, NULL, &batRect);
+        SDL_RenderCopy(_renderer, ballTexture, NULL, &ballRect);
+        SDL_RenderCopy(_renderer, batTexture, NULL, &batRect);
 
-        // Render everything in the renderer to the screen
-        SDL_RenderPresent(renderer);
+        // Render everything in the _renderer to the screen
+        SDL_RenderPresent(_renderer);
 
         lastTime = now;
     }
-//    	SDL_DestroyWindow(window);
-//
-//    	SDL_DestroyRenderer(renderer);
-//
-//	    SDL_DestroyTexture(texture);
-//
-//    	SDL_FreeSurface(surface);
 
+    Cleanup();
     SDL_Quit();
 
     return 0;
